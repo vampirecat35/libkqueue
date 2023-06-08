@@ -296,7 +296,9 @@ monitoring_thread_loop(UNUSED void *arg)
         /*
          * Don't allow cancellation in the middle of cleaning up resources
          */
+#if !defined(__ANDROID__)
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+#endif
         tracing_mutex_lock(&kq_mtx);
         dbg_printf("fd=%i - freeing kqueue due to fd closure (signal) for sfd=%i ", fd_map[info.si_fd], info.si_fd);
 
@@ -312,15 +314,19 @@ monitoring_thread_loop(UNUSED void *arg)
             break;
 
         tracing_mutex_unlock(&kq_mtx);
+#if !defined(__ANDROID__)
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+#endif
     }
 
     /*
      * Ensure that any cancellation requests are acted on
      */
     monitoring_thread_state = THREAD_EXIT_STATE_CANCEL_LOCKED;
+#if !defined(__ANDROID__)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_testcancel();
+#endif
 
     monitoring_thread_state = THREAD_EXIT_STATE_SELF_CANCEL;
     pthread_cleanup_pop(true); /* Executes the cleanup function (monitoring_thread_cleanup) */
@@ -428,9 +434,11 @@ linux_libkqueue_free(void)
         int ret;
 
         dbg_printf("tid=%u - cancelling", tid);
+#if !defined(__ANDROID__)
         ret = pthread_cancel(monitoring_thread);
         if (ret != 0)
            dbg_printf("tid=%u - cancel failed: %s", tid, strerror(ret));
+#endif
         /*
          * We unlock here to allow the monitoring thread
          * to continue if it was processing a cleanup.
@@ -439,11 +447,16 @@ linux_libkqueue_free(void)
 
         ret = pthread_join(monitoring_thread, &retval);
         if (ret == 0) {
+#if !defined(__ANDROID__)
             if (retval == PTHREAD_CANCELED) {
                 dbg_printf("tid=%u - joined with exit_status=PTHREAD_CANCELED", tid);
             } else {
-                dbg_printf("tid=%u - joined with exit_status=%" PRIdPTR, tid, (intptr_t)retval);
+		dbg_printf("tid=%u - joined with exit_status=%" PRIdPTR, tid, (intptr_t)retval);
             }
+#else
+	pthread_exit(retval);
+        dbg_printf("tid=%u - exited retval=%" PRIdPTR, tid, (intptr_t)retval);
+#endif
         } else {
             dbg_printf("tid=%u - join failed: %s", tid, strerror(ret));
         }

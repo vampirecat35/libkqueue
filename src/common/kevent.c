@@ -368,7 +368,7 @@ kevent(int kqfd,
     }
     if (!changelist) changelist = null_kev;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &prev_cancel_state);
 #endif
     /*
@@ -439,7 +439,7 @@ kevent(int kqfd,
          * may be waiting a long time for the thread
          * to exit...
          */
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
         (void)pthread_setcancelstate(prev_cancel_state, NULL);
         if (prev_cancel_state == PTHREAD_CANCEL_ENABLE) {
             dbg_printf("Checking for deferred cancellations");
@@ -447,7 +447,7 @@ kevent(int kqfd,
         }
 #endif
         rv = kqops.kevent_wait(kq, nevents, timeout);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
         (void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 #endif
         dbg_printf("kqops.kevent_wait rv=%i", rv);
@@ -485,7 +485,7 @@ kevent(int kqfd,
 #endif
 
 out:
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
     /*
      *  Test for cancellations first, so we don't
      *  double unlock the kqueue.

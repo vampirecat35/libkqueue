@@ -360,7 +360,7 @@ kqueue(void)
     tracing_mutex_unlock(&kq_mtx);
 #endif
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &prev_cancel_state);
 #endif
     kq = calloc(1, sizeof(*kq));
@@ -384,7 +384,7 @@ kqueue(void)
         dbg_printf("kq=%p - init failed", kq);
         tracing_mutex_destroy(&kq->kq_mtx);
         free(kq);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
         pthread_setcancelstate(prev_cancel_state, NULL);
 #endif
         return (-1);
@@ -403,7 +403,7 @@ kqueue(void)
     LIST_INSERT_HEAD(&kq_list, kq, kq_entry);
     kq_cnt++;
     tracing_mutex_unlock(&kq_mtx);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
     pthread_setcancelstate(prev_cancel_state, NULL);
     if (prev_cancel_state == PTHREAD_CANCEL_ENABLE)
         pthread_testcancel();
