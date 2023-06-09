@@ -385,7 +385,7 @@ kevent(int kqfd,
         errno = ENOENT;
         if (libkqueue_thread_safe)
             tracing_mutex_unlock(&kq_mtx);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__ANDROID__)
         pthread_setcancelstate(prev_cancel_state, NULL);
 #endif
         return (-1);
